@@ -5,7 +5,7 @@ import { authenticateUser } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// 1. Specific routes FIRST (these must come before dynamic routes)
+
 router.get('/my-bookings', authenticateUser, async (req, res) => {
   try {
     const bookings = await AccommodationBooking.find({ userId: req.user._id })
@@ -20,7 +20,7 @@ router.get('/my-bookings', authenticateUser, async (req, res) => {
   }
 });
 
-// Get all active accommodations
+
 router.get('/', async (req, res) => {
   try {
     const accommodations = await Accommodation.find({ isActive: true });
@@ -31,7 +31,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// 2. Dynamic route LAST (only after all specific routes)
+
 router.get('/:id', async (req, res) => {
   try {
     const accommodation = await Accommodation.findById(req.params.id);
@@ -45,7 +45,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Book accommodation
+
 router.post('/book', authenticateUser, async (req, res) => {
   try {
     const {

@@ -10,15 +10,15 @@ import { authenticateAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Dashboard analytics
+
 router.get('/dashboard', authenticateAdmin, async (req, res) => {
   try {
-    // Registration statistics
+    
     const totalRegistrations = await Registration.countDocuments();
     const paidRegistrations = await Registration.countDocuments({ paymentStatus: 'PAID' });
     const pendingRegistrations = await Registration.countDocuments({ paymentStatus: 'PENDING' });
 
-    // Role-based statistics
+    
     const registrationsByRole = await Registration.aggregate([
       {
         $lookup: {
@@ -40,7 +40,7 @@ router.get('/dashboard', authenticateAdmin, async (req, res) => {
       }
     ]);
 
-    // Booking phase statistics
+    
     const registrationsByPhase = await Registration.aggregate([
       {
         $group: {
@@ -51,7 +51,7 @@ router.get('/dashboard', authenticateAdmin, async (req, res) => {
       }
     ]);
 
-    // Revenue statistics
+    
     const totalRevenue = await Registration.aggregate([
       { $match: { paymentStatus: 'PAID' } },
       { $group: { _id: null, total: { $sum: '$totalAmount' } } }
@@ -62,19 +62,19 @@ router.get('/dashboard', authenticateAdmin, async (req, res) => {
       { $group: { _id: null, total: { $sum: '$totalAmount' } } }
     ]);
 
-    // Recent payments
+    
     const recentPayments = await Payment.find({ status: 'SUCCESS' })
       .populate('userId', 'name email')
       .sort({ createdAt: -1 })
       .limit(10);
 
-    // Pending payments
+    
     const pendingPayments = await Payment.find({ status: 'PENDING' })
       .populate('userId', 'name email')
       .sort({ createdAt: -1 })
       .limit(10);
 
-    // Abstract statistics
+    
     const abstractStats = await Abstract.aggregate([
       {
         $group: {
@@ -84,7 +84,7 @@ router.get('/dashboard', authenticateAdmin, async (req, res) => {
       }
     ]);
 
-    // Feedback statistics
+    
     const totalFeedback = await Feedback.countDocuments();
 
     res.json({
@@ -113,7 +113,7 @@ router.get('/dashboard', authenticateAdmin, async (req, res) => {
   }
 });
 
-// Get all registrations
+
 router.get('/registrations', authenticateAdmin, async (req, res) => {
   try {
     const { status, role, phase } = req.query;
@@ -126,7 +126,7 @@ router.get('/registrations', authenticateAdmin, async (req, res) => {
       .populate('userId', 'name email phone role membershipId')
       .sort({ createdAt: -1 });
 
-    // Filter by role if specified
+    
     let filteredRegistrations = registrations;
     if (role) {
       filteredRegistrations = registrations.filter(reg => reg.userId.role === role);
@@ -139,7 +139,7 @@ router.get('/registrations', authenticateAdmin, async (req, res) => {
   }
 });
 
-// Get all payments
+
 router.get('/payments', authenticateAdmin, async (req, res) => {
   try {
     const { status, type } = req.query;
@@ -161,7 +161,7 @@ router.get('/payments', authenticateAdmin, async (req, res) => {
   }
 });
 
-// Create accommodation
+
 router.post('/accommodations', authenticateAdmin, async (req, res) => {
   try {
     const accommodation = new Accommodation(req.body);
@@ -177,7 +177,7 @@ router.post('/accommodations', authenticateAdmin, async (req, res) => {
   }
 });
 
-// Update accommodation
+
 router.put('/accommodations/:id', authenticateAdmin, async (req, res) => {
   try {
     const accommodation = await Accommodation.findByIdAndUpdate(
@@ -200,7 +200,7 @@ router.put('/accommodations/:id', authenticateAdmin, async (req, res) => {
   }
 });
 
-// Delete accommodation
+
 router.delete('/accommodations/:id', authenticateAdmin, async (req, res) => {
   try {
     const accommodation = await Accommodation.findByIdAndUpdate(
@@ -220,7 +220,7 @@ router.delete('/accommodations/:id', authenticateAdmin, async (req, res) => {
   }
 });
 
-// Get accommodation bookings
+
 router.get('/accommodation-bookings', authenticateAdmin, async (req, res) => {
   try {
     const { status } = req.query;

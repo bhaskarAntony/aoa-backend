@@ -59,7 +59,7 @@ const accommodationBookingSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Generate booking number
+
 accommodationBookingSchema.pre('save', async function(next) {
   if (this.isNew) {
     const count = await this.constructor.countDocuments();

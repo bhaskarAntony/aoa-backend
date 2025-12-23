@@ -7,23 +7,23 @@ import multer from 'multer';
 
 const router = express.Router();
 
-// Configure Multer (store files in memory for now)
+
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-// POST route with multer middleware
+
 router.post(
   '/',
   authenticateUser,
   upload.fields([
-    { name: 'registrationType', maxCount: 1 },  // text field
-    { name: 'collegeLetter', maxCount: 1 },     // optional file
+    { name: 'registrationType', maxCount: 1 },  
+    { name: 'collegeLetter', maxCount: 1 },     
   ]),
   async (req, res) => {
     try {
-      // Now req.body will have registrationType
+      
       console.log('Received body:', req.body);
-      // Example output: { registrationType: 'WORKSHOP_CONFERENCE' }
+      
 
       if (req.files && req.files.collegeLetter) {
         console.log('Uploaded file:', req.files.collegeLetter[0].originalname);
@@ -37,7 +37,7 @@ router.post(
 
       const userId = req.user._id;
 
-      // Check existing registration
+      
       const existingRegistration = await Registration.findOne({ userId });
       if (existingRegistration) {
         return res.status(400).json({ message: 'User already has a registration' });
@@ -75,7 +75,7 @@ router.post(
   }
 );
 
-// Get user's registration
+
 router.get('/my-registration', authenticateUser, async (req, res) => {
   try {
     const registration = await Registration.findOne({ userId: req.user._id })
@@ -92,7 +92,7 @@ router.get('/my-registration', authenticateUser, async (req, res) => {
   }
 });
 
-// Get pricing info
+
 router.get('/pricing', authenticateUser, async (req, res) => {
   try {
     const bookingPhase = getBookingPhase();

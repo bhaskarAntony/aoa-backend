@@ -59,7 +59,7 @@ const abstractSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Generate submission number
+
 abstractSchema.pre('save', async function(next) {
   if (this.isNew) {
     const count = await this.constructor.countDocuments();

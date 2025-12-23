@@ -4,10 +4,10 @@ import { authenticateUser, authenticateAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Submit feedback
+
 router.post('/submit', authenticateUser, async (req, res) => {
   try {
-    // Check if feedback period is open (after Nov 1, 2024)
+    
     const now = new Date();
     const feedbackOpenDate = new Date('2024-11-01');
     
@@ -17,7 +17,7 @@ router.post('/submit', authenticateUser, async (req, res) => {
       });
     }
 
-    // Check if user already submitted feedback
+    
     const existingFeedback = await Feedback.findOne({ userId: req.user._id });
     if (existingFeedback) {
       return res.status(400).json({ message: 'You have already submitted feedback' });
@@ -62,7 +62,7 @@ router.post('/submit', authenticateUser, async (req, res) => {
   }
 });
 
-// Get user's feedback
+
 router.get('/my-feedback', authenticateUser, async (req, res) => {
   try {
     const feedback = await Feedback.findOne({ userId: req.user._id });
@@ -78,7 +78,7 @@ router.get('/my-feedback', authenticateUser, async (req, res) => {
   }
 });
 
-// Admin: Get all feedback
+
 router.get('/all', authenticateAdmin, async (req, res) => {
   try {
     const feedback = await Feedback.find()
@@ -92,7 +92,7 @@ router.get('/all', authenticateAdmin, async (req, res) => {
   }
 });
 
-// Admin: Get feedback analytics
+
 router.get('/analytics', authenticateAdmin, async (req, res) => {
   try {
     const totalFeedback = await Feedback.countDocuments();

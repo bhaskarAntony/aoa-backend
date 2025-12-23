@@ -8,13 +8,13 @@ import { authenticateUser } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Initialize Razorpay
+
 const razorpay = new Razorpay({
   key_id: "rzp_test_RsGQ0EyONIWnyi",
   key_secret: "gN0xl7IvpO6WDpns8N3gIHcE"
 });
 
-// Create payment order for registration
+
 router.post('/create-order/registration', authenticateUser, async (req, res) => {
   try {
     const registration = await Registration.findOne({ userId: req.user._id });
@@ -27,9 +27,9 @@ router.post('/create-order/registration', authenticateUser, async (req, res) => 
       return res.status(400).json({ message: 'Registration already paid' });
     }
 
-    // Create Razorpay order
+    
     const order = await razorpay.orders.create({
-      amount: registration.totalAmount * 100, // Amount in paisa
+      amount: registration.totalAmount * 100, 
       currency: 'INR',
       receipt: `reg_${registration._id}`,
       notes: {
@@ -39,11 +39,11 @@ router.post('/create-order/registration', authenticateUser, async (req, res) => 
       }
     });
 
-    // Update registration with order ID
+    
     registration.razorpayOrderId = order.id;
     await registration.save();
 
-    // Create payment record
+    
     const payment = new Payment({
       userId: req.user._id,
       registrationId: registration._id,
@@ -65,7 +65,7 @@ router.post('/create-order/registration', authenticateUser, async (req, res) => 
   }
 });
 
-// Create payment order for accommodation
+
 router.post('/create-order/accommodation', authenticateUser, async (req, res) => {
   try {
     const { bookingId } = req.body;
@@ -83,9 +83,9 @@ router.post('/create-order/accommodation', authenticateUser, async (req, res) =>
       return res.status(400).json({ message: 'Booking already paid' });
     }
 
-    // Create Razorpay order
+    
     const order = await razorpay.orders.create({
-      amount: booking.totalAmount * 100, // Amount in paisa
+      amount: booking.totalAmount * 100, 
       currency: 'INR',
       receipt: `acc_${booking._id}`,
       notes: {
@@ -95,11 +95,11 @@ router.post('/create-order/accommodation', authenticateUser, async (req, res) =>
       }
     });
 
-    // Update booking with order ID
+    
     booking.razorpayOrderId = order.id;
     await booking.save();
 
-    // Create payment record
+    
     const payment = new Payment({
       userId: req.user._id,
       accommodationBookingId: booking._id,
@@ -121,12 +121,12 @@ router.post('/create-order/accommodation', authenticateUser, async (req, res) =>
   }
 });
 
-// Verify payment
+
 router.post('/verify', authenticateUser, async (req, res) => {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
 
-    // Verify signature
+    
     const body = razorpay_order_id + "|" + razorpay_payment_id;
     const expectedSignature = crypto
       .createHmac('sha256', "gN0xl7IvpO6WDpns8N3gIHcE")
@@ -137,20 +137,20 @@ router.post('/verify', authenticateUser, async (req, res) => {
       return res.status(400).json({ message: 'Invalid payment signature' });
     }
 
-    // Find payment record
+    
     const payment = await Payment.findOne({ razorpayOrderId: razorpay_order_id });
     
     if (!payment) {
       return res.status(404).json({ message: 'Payment record not found' });
     }
 
-    // Update payment status
+    
     payment.status = 'SUCCESS';
     payment.razorpayPaymentId = razorpay_payment_id;
     payment.razorpaySignature = razorpay_signature;
     await payment.save();
 
-    // Update registration or accommodation booking
+    
     if (payment.paymentType === 'REGISTRATION') {
       await Registration.findByIdAndUpdate(payment.registrationId, {
         paymentStatus: 'PAID',
@@ -171,12 +171,12 @@ router.post('/verify', authenticateUser, async (req, res) => {
   }
 });
 
-// Handle payment failure
+
 router.post('/failed', authenticateUser, async (req, res) => {
   try {
     const { razorpay_order_id, error } = req.body;
 
-    // Update payment status
+    
     const payment = await Payment.findOne({ razorpayOrderId: razorpay_order_id });
     
     if (payment) {
@@ -184,7 +184,7 @@ router.post('/failed', authenticateUser, async (req, res) => {
       payment.failureReason = error?.description || 'Payment failed';
       await payment.save();
 
-      // Update registration or accommodation booking
+      
       if (payment.paymentType === 'REGISTRATION') {
         await Registration.findByIdAndUpdate(payment.registrationId, {
           paymentStatus: 'FAILED'

@@ -34,7 +34,7 @@ export const authenticateAdmin = async (req, res, next) => {
 
     const decoded = jwt.verify(token, "dndjjdhjdhjd");
     console.log(decoded);
-    // Check if it's an admin token
+    
     if (decoded.isAdmin) {
       const admin = await Admin.findById(decoded.adminId).select('-password');
       

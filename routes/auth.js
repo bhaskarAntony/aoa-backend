@@ -5,18 +5,18 @@ import Admin from '../models/Admin.js';
 
 const router = express.Router();
 
-// User Registration
+
 router.post('/register', async (req, res) => {
   try {
     const { name, email, phone, password, role, membershipId, collegeLetter } = req.body;
 
-    // Check if user already exists
+    
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists with this email' });
     }
 
-    // Validate role-specific requirements
+    
     if (role === 'AOA' && !membershipId) {
       return res.status(400).json({ message: 'Membership ID is required for AOA members' });
     }
@@ -25,7 +25,7 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ message: 'College letter is required for PGS users' });
     }
 
-    // Create user
+    
     const user = new User({
       name,
       email,
@@ -38,7 +38,7 @@ router.post('/register', async (req, res) => {
 
     await user.save();
 
-    // Generate JWT token
+    
     const token = jwt.sign(
       { userId: user._id },
       "dndjjdhjdhjd",
@@ -61,24 +61,26 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// User Login
+
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Find user
+    
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    // Check password
+    
     const isMatch = await user.comparePassword(password);
+    console.log(password);
+    
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    // Generate JWT token
+    
     const token = jwt.sign(
       { userId: user._id },
       "dndjjdhjdhjd",
@@ -101,24 +103,24 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Admin Login
+
 router.post('/admin/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Find admin
+    
     const admin = await Admin.findOne({ email });
     if (!admin) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    // Check password
+    
     const isMatch = await admin.comparePassword(password);
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    // Generate JWT token for admin
+    
     const token = jwt.sign(
       { adminId: admin._id, isAdmin: true },
       "dndjjdhjdhjd",

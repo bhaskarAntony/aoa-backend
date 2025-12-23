@@ -56,7 +56,7 @@ const registrationSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Generate registration number
+
 registrationSchema.pre('save', async function(next) {
   if (this.isNew) {
     const count = await this.constructor.countDocuments();

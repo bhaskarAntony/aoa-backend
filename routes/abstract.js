@@ -6,7 +6,7 @@ import { authenticateUser, authenticateAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Configure multer for file uploads
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, 'uploads/abstracts/');
@@ -20,7 +20,7 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage,
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit
+    fileSize: 5 * 1024 * 1024, 
   },
   fileFilter: (req, file, cb) => {
     if (file.mimetype === 'application/pdf') {
@@ -31,7 +31,7 @@ const upload = multer({
   }
 });
 
-// Submit abstract
+
 router.post('/submit', authenticateUser, upload.single('abstractFile'), async (req, res) => {
   try {
     const { title, authors, category } = req.body;
@@ -40,7 +40,7 @@ router.post('/submit', authenticateUser, upload.single('abstractFile'), async (r
       return res.status(400).json({ message: 'PDF file is required' });
     }
 
-    // Check if user already submitted an abstract
+    
     const existingAbstract = await Abstract.findOne({ userId: req.user._id });
     if (existingAbstract) {
       return res.status(400).json({ message: 'You have already submitted an abstract' });
@@ -68,7 +68,7 @@ router.post('/submit', authenticateUser, upload.single('abstractFile'), async (r
   }
 });
 
-// Get user's abstract
+
 router.get('/my-abstract', authenticateUser, async (req, res) => {
   try {
     const abstract = await Abstract.findOne({ userId: req.user._id })
@@ -86,7 +86,7 @@ router.get('/my-abstract', authenticateUser, async (req, res) => {
   }
 });
 
-// Admin: Get all abstracts
+
 router.get('/all', authenticateAdmin, async (req, res) => {
   try {
     const { status } = req.query;
@@ -104,7 +104,7 @@ router.get('/all', authenticateAdmin, async (req, res) => {
   }
 });
 
-// Admin: Review abstract
+
 router.put('/review/:id', authenticateAdmin, async (req, res) => {
   try {
     const { status, reviewComments } = req.body;
