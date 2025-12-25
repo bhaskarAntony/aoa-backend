@@ -9,7 +9,7 @@ import abstractRoutes from './routes/abstract.js';
 import feedbackRoutes from './routes/feedback.js';
 import adminRoutes from './routes/admin.js';
 import paymentRoutes from './routes/payment.js';
-
+import attendanceRoutes from './routes/attendance.js';
 dotenv.config();
 
 const app = express();
@@ -26,6 +26,7 @@ app.use('/api/abstract', abstractRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/payment', paymentRoutes);
+app.use('/api/attendance', attendanceRoutes);
 
 mongoose.connect("mongodb+srv://bhaskarAntoty123:MQEJ1W9gtKD547hy@bhaskarantony.wagpkay.mongodb.net/AOA1?retryWrites=true&w=majority")
   .then(() => console.log('MongoDB connected'))

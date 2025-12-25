@@ -41,6 +41,7 @@ export const authenticateAdmin = async (req, res, next) => {
       if (!admin) {
         return res.status(401).json({ message: 'Admin not found' });
       }
+      console.log("a = ", admin)
       
       req.admin = admin;
     } else {

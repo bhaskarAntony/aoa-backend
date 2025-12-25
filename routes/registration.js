@@ -7,53 +7,116 @@ import multer from 'multer';
 
 const router = express.Router();
 
-
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
-
 
 router.post(
   '/',
   authenticateUser,
   upload.fields([
-    { name: 'registrationType', maxCount: 1 },  
-    { name: 'collegeLetter', maxCount: 1 },     
+    { name: 'registrationType', maxCount: 1 },
+    { name: 'collegeLetter', maxCount: 1 },
   ]),
   async (req, res) => {
     try {
-      
-      console.log('Received body:', req.body);
-      
-
-      if (req.files && req.files.collegeLetter) {
-        console.log('Uploaded file:', req.files.collegeLetter[0].originalname);
-      }
-
-      const { registrationType } = req.body;
+      const {
+        registrationType,
+        selectedWorkshop,
+        accompanyingPersons = '0',
+      } = req.body;
 
       if (!registrationType) {
-        return res.status(400).json({ message: 'Registration type is required' });
+        return res
+          .status(400)
+          .json({ message: 'Registration type is required' });
+      }
+
+      // AOA Certified Course validation: only AOA / NON_AOA allowed
+      if (
+        registrationType === 'AOA_CERTIFIED_COURSE' &&
+        req.user.role === 'PGS'
+      ) {
+        return res.status(400).json({
+          message: 'AOA Certified Course is only available for AOA and Non-AOA members',
+        });
+      }
+
+      if (
+        (registrationType === 'WORKSHOP_CONFERENCE' ||
+          registrationType === 'COMBO') &&
+        !selectedWorkshop
+      ) {
+        return res
+          .status(400)
+          .json({ message: 'Workshop selection is required' });
       }
 
       const userId = req.user._id;
 
-      
       const existingRegistration = await Registration.findOne({ userId });
       if (existingRegistration) {
-        return res.status(400).json({ message: 'User already has a registration' });
+        return res
+          .status(400)
+          .json({ message: 'User already has a registration' });
+      }
+
+      // Capacity check for AOA certified course (limited 40)
+      if (registrationType === 'AOA_CERTIFIED_COURSE') {
+        const aoaCourseCount = await Registration.countDocuments({
+          registrationType: 'AOA_CERTIFIED_COURSE',
+        });
+        if (aoaCourseCount >= 40) {
+          return res
+            .status(400)
+            .json({ message: 'AOA Certified Course seats are full' });
+        }
       }
 
       const bookingPhase = getBookingPhase();
-      const pricing = calculatePrice(req.user.role, registrationType, bookingPhase);
+      const pricing = calculatePrice(
+        req.user.role,
+        registrationType,
+        bookingPhase
+      );
 
-      const registration = new Registration({
+      if (!pricing || pricing.totalAmount <= 0) {
+        return res.status(400).json({
+          message: 'Pricing not available for this package in current phase',
+        });
+      }
+
+      const accompanyingCount =
+        registrationType === 'AOA_CERTIFIED_COURSE'
+          ? 0
+          : parseInt(accompanyingPersons, 10) || 0;
+      const accompanyingTotal = accompanyingCount * 7000;
+      const grandTotal = pricing.totalAmount + accompanyingTotal;
+
+      const registrationData = {
         userId,
         registrationType,
+        selectedWorkshop,
+        accompanyingPersons: accompanyingCount,
+        accompanyingTotal,
         bookingPhase,
         ...pricing,
-        lifetimeMembershipId: registrationType === 'COMBO' ? generateLifetimeMembershipId() : undefined,
-      });
+        totalAmount: grandTotal,
+        lifetimeMembershipId:
+          registrationType === 'COMBO'
+            ? generateLifetimeMembershipId()
+            : undefined,
+      };
 
+      // College letter for PGS
+      if (req.user.role === 'PGS' && req.files?.collegeLetter) {
+        const file = req.files.collegeLetter[0];
+        registrationData.collegeLetter = {
+          data: file.buffer,
+          contentType: file.mimetype,
+        };
+      }
+
+      const registration = new Registration(registrationData);
       await registration.save();
 
       await registration.populate('userId', 'name email role');
@@ -67,7 +130,7 @@ router.post(
       if (error.name === 'ValidationError') {
         return res.status(400).json({
           message: 'Validation failed',
-          errors: Object.values(error.errors).map(e => e.message),
+          errors: Object.values(error.errors).map((e) => e.message),
         });
       }
       res.status(500).json({ message: 'Server error during registration' });
@@ -75,11 +138,12 @@ router.post(
   }
 );
 
-
 router.get('/my-registration', authenticateUser, async (req, res) => {
   try {
-    const registration = await Registration.findOne({ userId: req.user._id })
-      .populate('userId', 'name email role membershipId');
+    const registration = await Registration.findOne({ userId: req.user._id }).populate(
+      'userId',
+      'name email role membershipId'
+    );
 
     if (!registration) {
       return res.status(404).json({ message: 'No registration found' });
@@ -92,22 +156,46 @@ router.get('/my-registration', authenticateUser, async (req, res) => {
   }
 });
 
-
 router.get('/pricing', authenticateUser, async (req, res) => {
   try {
     const bookingPhase = getBookingPhase();
-    
-    const conferenceOnly = calculatePrice(req.user.role, 'CONFERENCE_ONLY', bookingPhase);
-    const workshopConference = calculatePrice(req.user.role, 'WORKSHOP_CONFERENCE', bookingPhase);
+
+    const conferenceOnly = calculatePrice(
+      req.user.role,
+      'CONFERENCE_ONLY',
+      bookingPhase
+    );
+    const workshopConference = calculatePrice(
+      req.user.role,
+      'WORKSHOP_CONFERENCE',
+      bookingPhase
+    );
     const combo = calculatePrice(req.user.role, 'COMBO', bookingPhase);
+    const aoaCourse = calculatePrice(
+      req.user.role,
+      'AOA_CERTIFIED_COURSE',
+      bookingPhase
+    );
+
+    // capacity info for front‑end
+    const aoaCourseCount = await Registration.countDocuments({
+      registrationType: 'AOA_CERTIFIED_COURSE',
+    });
+    const aoaCourseFull = aoaCourseCount >= 40;
 
     res.json({
       bookingPhase,
       pricing: {
         CONFERENCE_ONLY: conferenceOnly,
         WORKSHOP_CONFERENCE: workshopConference,
-        COMBO: combo
-      }
+        COMBO: combo,
+        AOA_CERTIFIED_COURSE: aoaCourse,
+      },
+      meta: {
+        aoaCourseCount,
+        aoaCourseFull,
+        aoaCourseLimit: 40,
+      },
     });
   } catch (error) {
     console.error('Pricing error:', error);
